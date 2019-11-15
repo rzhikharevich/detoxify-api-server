@@ -10,7 +10,7 @@ import worker
 def main():
     args = parse_args()
 
-    worker.load_assets(args.nsfw_model)
+    worker.load_assets(args.nsfw_model, args.text_model)
 
     with open(args.text_replacements, "r") as text_replacements_file:
         text_replacements = \
@@ -21,7 +21,7 @@ def main():
     api.DetoxifyApi.run_app(
         args.max_workers,
         text_replacements,
-        image_replacements
+        image_replacements,
     )
 
 
@@ -33,25 +33,31 @@ def parse_args():
     parser.add_argument(
         "--max-workers",
         type=int,
-        help="max number of workers"
+        help="max number of workers",
     )
 
     parser.add_argument(
         "--nsfw-model",
         required=True,
-        help="path to NSFW classifier model"
+        help="path to NSFW classifier model",
+    )
+
+    parser.add_argiment(
+        "--text-model",
+        required=True,
+        help="path to text classifier models",
     )
 
     parser.add_argument(
         "--text-replacements",
         required=True,
-        help="path to a ###-separated list of toxic text replacements"
+        help="path to a ###-separated list of toxic text replacements",
     )
 
     parser.add_argument(
         "--image-replacements",
         required=True,
-        help="path to toxic image replacement directory"
+        help="path to toxic image replacement directory",
     )
 
     return parser.parse_args()
