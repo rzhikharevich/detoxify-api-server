@@ -71,7 +71,6 @@ def is_toxic_text(text):
                                              text_prob_thresholds):
         class_prob = classifier.predict_proba(vectorized.multiply(matrix))[:,1].item()
         if class_prob >= threshold:
-            print(text_copy)
             return True
 
     return False
@@ -81,7 +80,6 @@ def is_toxic_image(image):
     image = load_image(image)
 
     pred = nsfw_model.predict(image)[0]
-    print("pred", pred)
 
     return pred.argmax() not in (0, 2)
 

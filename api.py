@@ -50,7 +50,6 @@ class DetoxifyApi:
                 "text" in body and \
                 await self.offload(worker.is_toxic_text, body["text"]):
             response["text"] = utils.pick_random(self.text_replacements)
-            print(body["text"], response)
 
         if \
                 "image" in body and \
