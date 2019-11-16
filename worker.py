@@ -64,11 +64,14 @@ def wait_for_init():
 
 
 def is_toxic_text(text):
+    text_copy = text
     vectorized = vectorizer.transform([text])
     for classifier, matrix, threshold in zip(text_classifiers,
                                              text_matrices,
                                              text_prob_thresholds):
-        if classifier.predict_proba(vectorized.multiply(matrix))[:,1].item() >= threshold:
+        class_prob = classifier.predict_proba(vectorized.multiply(matrix))[:,1].item()
+        if class_prob >= threshold:
+            print(text_copy)
             return True
 
     return False
