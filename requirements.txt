@@ -1,0 +1,7 @@
+aiohttp
+h5py
+joblib
+keras
+numpy
+Pillow
+tensorflow
