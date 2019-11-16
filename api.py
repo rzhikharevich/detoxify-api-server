@@ -50,14 +50,22 @@ class DetoxifyApi:
                 "text" in body and \
                 await self.offload(worker.is_toxic_text, body["text"]):
             response["text"] = utils.pick_random(self.text_replacements)
-            print(response)
+            print(body["text"], response)
 
         if \
                 "image" in body and \
                 await self.offload(worker.is_toxic_image, body["image"]):
             response["image"] = utils.pick_random(self.image_replacements)
 
-        return aioweb.json_response(response)
+        return aioweb.json_response(
+            response,
+            headers={
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET",
+                "Access-Control-Allow-Headers": "application/json",
+            }
+        )
 
     async def offload(self, fun, *args):
         loop = asyncio.get_running_loop()
