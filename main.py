@@ -42,7 +42,7 @@ def parse_args():
         help="path to NSFW classifier model",
     )
 
-    parser.add_argiment(
+    parser.add_argument(
         "--text-model",
         required=True,
         help="path to text classifier models",
@@ -75,6 +75,11 @@ def load_image_replacements(path):
             image_replacements.append(file.read())
 
     return image_replacements
+
+
+import re, string
+re_tok = re.compile(f'([{string.punctuation}“”¨«»®´·º½¾¿¡§£₤‘’])')
+def tokenize(s): return re_tok.sub(r' \1 ', s).split()
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import warnings
 import h5py
 import numpy as np
 from PIL import Image
-from sklearn.externals import joblib
+import joblib
 
 import utils
 
@@ -17,16 +17,23 @@ def load_assets(nsfw_model_path, text_model_path):
     with open(nsfw_model_path, "rb") as nsfw_model_file:
         nsfw_model_bytes = nsfw_model_file.read()
 
-    global text_classifiers = []
-    global text_matrices = []
+    global text_classifiers
+    global text_matrices
+
+    text_classifiers = []
+    text_matrices = []
+
     for label in TEXT_LABELS:
         classifier_path = f"{text_model_path}/{label}_classifier.joblib"
         matrix_path = f"{text_model_path}/{label}_matrix.npy"
         text_classifiers.append(joblib.load(classifier_path))
         text_matrices.append(np.load(matrix_path))
 
-    global vectorizer = joblib.load(f"{text_model_path}/vectorizer.joblib")
-    global text_prob_thresholds = np.load(f"{text_model_path}/text_prob_thresholds.npy}")
+    global vectorizer
+    global text_prob_thresholds
+
+    vectorizer = joblib.load(f"{text_model_path}/vectorizer.joblib")
+    text_prob_thresholds = np.load(f"{text_model_path}/text_prob_thresholds.npy")
 
 
 def init():
@@ -57,11 +64,11 @@ def wait_for_init():
 
 
 def is_toxic_text(text):
-    vectorized = vectorizer.transform(text)
+    vectorized = vectorizer.transform([text])
     for classifier, matrix, threshold in zip(text_classifiers,
                                              text_matrices,
                                              text_prob_thresholds):
-        if model.predict_prob(vectorized.multiply(matrix))[:,1].item() >= threshold:
+        if classifier.predict_proba(vectorized.multiply(matrix))[:,1].item() >= threshold:
             return True
 
     return False
