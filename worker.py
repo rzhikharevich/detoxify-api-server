@@ -11,33 +11,23 @@ import joblib
 import utils
 
 TEXT_LABELS = ("toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate")
+TEXT_MODEL_THRESHOLD = 0.7
+
 
 def load_assets(nsfw_model_path, text_model_path):
-    global nsfw_model_bytes
+    global nsfw_model_bytes, text_model_bytes, text_model_tk
+
     with open(nsfw_model_path, "rb") as nsfw_model_file:
         nsfw_model_bytes = nsfw_model_file.read()
 
-    global text_classifiers
-    global text_matrices
+    with open(f"{text_model_path}/network.hdf5", "rb") as text_model_file:
+        text_model_bytes = text_model_file.read()
 
-    text_classifiers = []
-    text_matrices = []
-
-    for label in TEXT_LABELS:
-        classifier_path = f"{text_model_path}/{label}_classifier.joblib"
-        matrix_path = f"{text_model_path}/{label}_matrix.npy"
-        text_classifiers.append(joblib.load(classifier_path))
-        text_matrices.append(np.load(matrix_path))
-
-    global vectorizer
-    global text_prob_thresholds
-
-    vectorizer = joblib.load(f"{text_model_path}/vectorizer.joblib")
-    text_prob_thresholds = np.load(f"{text_model_path}/text_prob_thresholds.npy")
+    text_model_tk = joblib.load(f"{text_model_path}/tokenizer.joblib")
 
 
 def init():
-    global keras, nsfw_model
+    global keras, nsfw_model, text_model, text_model_tk
 
     warnings.simplefilter("ignore")
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -49,14 +39,21 @@ def init():
     import h5py
     import tensorflow.keras as keras
 
-    nsfw_model = keras.models.load_model(
-        h5py.File(io.BytesIO(nsfw_model_bytes)),
-    )
+    nsfw_model = model_from_bytes(nsfw_model_bytes)
+
+    text_model = model_from_bytes(text_model_bytes)
 
     # Warm up to make sure the model is responsive on first use. It seems like
     # Keras / Tensorflow does some lazy initialization on first predict call.
+
     shape = tuple([1, *nsfw_model.input_shape[1:]])
     nsfw_model.predict(np.zeros(shape, dtype=np.float32))
+
+    _ = is_toxic_text("hello world")
+
+
+def model_from_bytes(b):
+    return keras.models.load_model(h5py.File(io.BytesIO(b)))
 
 
 def wait_for_init():
@@ -64,16 +61,13 @@ def wait_for_init():
 
 
 def is_toxic_text(text):
-    text_copy = text
-    vectorized = vectorizer.transform([text])
-    for classifier, matrix, threshold in zip(text_classifiers,
-                                             text_matrices,
-                                             text_prob_thresholds):
-        class_prob = classifier.predict_proba(vectorized.multiply(matrix))[:,1].item()
-        if class_prob >= threshold:
-            return True
+    pred = utils.pipeline(
+        text_model_tk.texts_to_sequences,
+        lambda x: keras.preprocessing.sequence.pad_sequences(x, maxlen=150),
+        text_model.predict
+    )([text])
 
-    return False
+    return pred.max() > TEXT_MODEL_THRESHOLD
 
 
 def is_toxic_image(image):
